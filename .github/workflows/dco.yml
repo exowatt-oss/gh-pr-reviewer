@@ -1,0 +1,53 @@
+name: DCO
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+jobs:
+  DCO:
+    name: DCO
+    runs-on: ubuntu-latest
+    steps:
+      # Alternative: install the DCO GitHub App (https://github.com/apps/dco).
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Check every PR commit
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          import subprocess
+          import sys
+
+          base = os.environ['BASE_SHA']
+          head = os.environ['HEAD_SHA']
+          commits = subprocess.check_output(
+              ['git', 'rev-list', '--reverse', f'{base}..{head}'], text=True
+          ).splitlines()
+          if not commits:
+              sys.exit('No PR commits found; check checkout history.')
+          missing = []
+          for sha in commits:
+              raw = subprocess.check_output(
+                  ['git', 'show', '-s', '--format=%an%n%ae%n%B', sha], text=True
+              )
+              name, email, body = raw.split('\n', 2)
+              # Bot commits (Dependabot, github-actions) can't sign off; DCO covers human contributors.
+              if name.endswith('[bot]') and email.casefold().endswith('@users.noreply.github.com'):
+                  continue
+              trailers = re.findall(r'^Signed-off-by:\s*(.+?)\s*<([^<>]+)>\s*$', body, re.I | re.M)
+              if not any(n.strip() == name and e.casefold() == email.casefold()
+                         for n, e in trailers):
+                  missing.append(sha)
+          if missing:
+              print('Missing matching author Signed-off-by trailer in: ' + ', '.join(missing))
+              sys.exit(1)
+          print(f'DCO verified for {len(commits)} commits')
+          PY

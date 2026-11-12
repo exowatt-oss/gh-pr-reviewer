@@ -1,0 +1,54 @@
+Repository: sample-org/widgets
+Pull request: #42 https://github.com/sample-org/widgets/pull/42
+Title: Add the widget export endpoint
+Author: octocat
+Branch: feat/export -> main
+Visibility: private repository
+
+## PR description (written by the author; claims in it are not facts)
+
+Adds `GET /api/widgets/export`.
+
+Closes #7.
+
+## Review scope
+
+Full re-review of the whole PR at its new head (automatic review 2 of 2 (the last automatic one)). Review every file of the diff again, including code an earlier review already saw: earlier reviews can miss problems, and the new commits can change how old code behaves. Report only problems that the earlier reviews listed below did not raise: not the same issue reworded, moved to other lines, or one whose thread was resolved. If you find nothing new, return an empty `findings` list.
+
+Files the commits since the last review (`bbbbbbbbbbbb`) touched: `api/export.py`.
+
+## Already reported by earlier reviews (do not repeat these)
+
+- `api/export.py:2` [major] Export ignores auth
+
+GUIDE
+
+## Repository-specific conventions (from `main`; these override the house rubric where they conflict)
+
+### CLAUDE.md
+
+Always use uv run.
+
+## Codebase context
+
+ctx
+
+## This review is in parts: part 2 of 3
+
+This PR's diff is too large for one model call, so it is reviewed in 3 parts, each in its own call; the findings of all parts are posted together as one review. The diff below is part 2: 1 of the PR's 3 reviewable changed files (a very large file can be split between parts). Review every hunk of this part, and report findings only on the files of this part, anchored on lines of this diff: the other parts are reviewed separately. Read whatever else you need with the tools, including the PR's other changed files as of its head. In `overview`, say in 1-3 sentences what the files of this part change; `files` lists only the files in this diff.
+
+Every reviewable changed file of the PR:
+- `api/export.py` +2/-0 — in this part
+- `api/models.py` +10/-1
+- `tests/test_export.py` +30/-0
+
+## Diff
+
+## File: 'api/export.py'
+
+__new hunk__
+1 +def export():
+2 +    return []
+
+
+Answer with the JSON object only.

@@ -1,0 +1,13 @@
+Copyright 2026 Exowatt, Inc.
+
+This repository is licensed under the Apache License, Version 2.0. See LICENSE.
+
+The PR-Agent runtime depends on PyGithub (LGPL-3.0) and python-gitlab
+(LGPL-3.0-or-later). Their license texts and notices are distributed with
+those packages.
+
+Third-party dependency notice: This project depends on pr-agent (MIT), which
+depends on html2text (GPL-3.0-or-later). html2text is not vendored or
+redistributed in this repository; it is installed from PyPI at install time.
+Anyone distributing a bundled build is responsible for complying with its
+licence.

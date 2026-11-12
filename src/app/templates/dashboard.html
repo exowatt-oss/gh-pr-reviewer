@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pull request reviewer</title>
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body>
+  <header>
+    <strong>Pull request reviewer</strong>
+    <span class="who">{{ user.display_name }} · {{ user.email }}</span>
+  </header>
+  <main>
+    <h1>Review activity</h1>
+    <p class="sub">Model {{ model_label }} · reasoning effort {{ effort }} · reviewing {{ repos | join(", ") if repos else "no repositories" }}</p>
+
+    <section class="stats" aria-label="Model usage">
+      <div class="stat"><div class="label">Today (UTC)</div><div class="value">{{ summary.today_usd | usd }}</div></div>
+      <div class="stat"><div class="label">This month</div><div class="value">{{ summary.month_to_date_usd | usd }}</div><div class="note">{{ summary.month_calls }} model calls</div></div>
+      <div class="stat"><div class="label">Projected month</div><div class="value">{{ summary.projected_month_usd | usd }}</div><div class="note">At the current run rate</div></div>
+    </section>
+
+    <h2>Poller</h2>
+    <div class="status">
+      <span><b>{{ poller.state | replace("_", " ") }}</b>{% if poller.dry_run %} · dry run{% endif %}</span>
+      {% if poller.reason %}<span>{{ poller.reason }}</span>{% endif %}
+      {% if poller.last_poll_at %}<span>Last poll {{ poller.last_poll_at | short_time }} UTC</span>{% endif %}
+      {% if poller.polls is defined %}<span>{{ poller.polls }} polls</span>{% endif %}
+      {% if poller.mode == "org" %}<span>Organization mode · {{ poller.repo_count or "?" }} repositories</span>{% endif %}
+      {% if poller.budget and poller.budget.state %}<span>Spend guard: {{ poller.budget.state | replace("_", " ") }}{% if poller.budget.fraction is not none %} ({{ (poller.budget.fraction * 100) | round(1) }}%){% endif %}</span>{% endif %}
+      {% if poller.queue %}<span>Queue: {{ poller.queue.queued }} waiting, {{ poller.queue.running }}/{{ poller.queue.slots }} running</span>{% endif %}
+      <span>In flight: {{ (poller.in_flight or []) | join(", ") or "none" }}</span>
+      {% if poller.last_error %}<span class="err">Last error {{ poller.last_error_at | short_time }}: {{ poller.last_error }}</span>{% endif %}
+    </div>
+
+    <h2>Recent reviews</h2>
+    {% if reviews %}
+    <table>
+      <thead><tr><th>Time (UTC)</th><th>Repository</th><th>PR</th><th>SHA</th><th>Command</th><th class="num">Input</th><th class="num">Output</th><th class="num">Cost estimate</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for r in reviews %}
+        <tr>
+          <td class="nw">{{ r.started_at | short_time }}</td>
+          <td class="nw">{{ r.repo }}</td>
+          <td><a href="{{ r.comment_url or r.pr_url }}">#{{ r.pr_number }}</a>{% if r.pr_title %}<div class="title">{{ r.pr_title[:80] }}</div>{% endif %}</td>
+          <td class="nw"><code>{{ r.head_sha[:7] }}</code></td>
+          <td class="nw">{{ r.command }}</td>
+          <td class="num">{{ r.prompt_tokens | ktok }}</td>
+          <td class="num">{{ r.completion_tokens | ktok }}</td>
+          <td class="num">{{ r.cost_usd | usd }}</td>
+          <td class="nw"><span class="pill {{ r.status }}">{{ r.status }}{% if r.status == "cancelled" and r.skip_reason %}: {{ r.skip_reason | replace("_", " ") }}{% endif %}</span>{% if r.error %}<div class="err title">{{ r.error[:160] }}</div>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="status empty">No reviews yet.</div>{% endif %}
+
+    <h2>Usage by repository</h2>
+    {% if summary.by_repo_all_time %}
+    <table>
+      <thead><tr><th>Repository</th><th class="num">Reviews</th><th class="num">Calls</th><th class="num">Input</th><th class="num">Output</th><th class="num">This month</th><th class="num">All time</th></tr></thead>
+      <tbody>
+        {% set month = {} %}
+        {% for m in summary.by_repo_month %}{% set _ = month.update({m.repo: m.cost}) %}{% endfor %}
+        {% for r in summary.by_repo_all_time %}
+        <tr><td>{{ r.repo }}</td><td class="num">{{ r.reviews }}</td><td class="num">{{ r.calls }}</td><td class="num">{{ r.prompt_tokens | ktok }}</td><td class="num">{{ r.completion_tokens | ktok }}</td><td class="num">{{ month.get(r.repo, 0) | usd }}</td><td class="num">{{ r.cost | usd }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="status empty">No model usage recorded yet.</div>{% endif %}
+
+    <footer><span>Costs use provider-reported values when available, otherwise your configured rates.</span><a href="/api/reviews">Reviews API</a><a href="/api/costs">Costs API</a><a href="/healthz">Health</a><a href="/docs">API docs</a><span>Build {{ version }}</span></footer>
+  </main>
+</body>
+</html>
